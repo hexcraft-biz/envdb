@@ -25,9 +25,6 @@ type DB struct {
 	IdleTime int    `json:"idleTime"`
 }
 
-// ================================================================
-//
-// ================================================================
 func New() (*DB, error) {
 	maxOpen, err := strconv.Atoi(os.Getenv("DB_MAX_OPEN"))
 	if err != nil {
@@ -64,11 +61,10 @@ func New() (*DB, error) {
 	}, nil
 }
 
-// ================================================================
-func (r *DB) Open() error {
+func (r *DB) Connect(isInit bool) error {
 	var err error
 	r.Close()
-	r.DB, err = r.Connect()
+	r.DB, err = r.open(isInit)
 	return err
 }
 
@@ -78,11 +74,13 @@ func (r *DB) Close() {
 	}
 }
 
-// ================================================================
-//
-// ================================================================
-func (r DB) Connect() (*sqlx.DB, error) {
-	protocol := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?%s", r.User, r.Password, r.Host, r.Port, r.Name, r.Params)
+func (r DB) open(isInit bool) (*sqlx.DB, error) {
+	protocol := ""
+	if isInit {
+		protocol = fmt.Sprintf("%s:%s@tcp(%s:%s)/?%s", r.User, r.Password, r.Host, r.Port, r.Params)
+	} else {
+		protocol = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?%s", r.User, r.Password, r.Host, r.Port, r.Name, r.Params)
+	}
 
 	db, err := sqlx.Open(r.Type, protocol)
 	if err != nil {
