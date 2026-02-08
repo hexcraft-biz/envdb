@@ -1,4 +1,4 @@
-package mysql
+package envdb
 
 import (
 	"fmt"
@@ -10,33 +10,25 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// ================================================================
-//
-// ================================================================
-type Mysql struct {
-	*sqlx.DB
-	Type        string
-	Host        string
-	Port        string
-	Name        string
-	ModeInit    *MysqlModeSettings
-	ModeDefault *MysqlModeSettings
-}
-
-type MysqlModeSettings struct {
-	User     string
-	Password string
-	Params   string
-	MaxOpen  int
-	MaxIdle  int
-	LifeTime int
-	IdleTime int
+type DB struct {
+	*sqlx.DB `json:"-"`
+	Type     string `json:"type"`
+	Host     string `json:"host"`
+	Port     string `json:"port"`
+	Name     string `json:"name"`
+	User     string `json:"user"`
+	Password string `json:"passowrd"`
+	Params   string `json:"params"`
+	MaxOpen  int    `json:"maxOpen"`
+	MaxIdle  int    `json:"maxIdle"`
+	LifeTime int    `json:"lifeTime"`
+	IdleTime int    `json:"idleTime"`
 }
 
 // ================================================================
 //
 // ================================================================
-func New() (*Mysql, error) {
+func New() (*DB, error) {
 	maxOpen, err := strconv.Atoi(os.Getenv("DB_MAX_OPEN"))
 	if err != nil {
 		return nil, err
@@ -57,73 +49,50 @@ func New() (*Mysql, error) {
 		return nil, err
 	}
 
-	return &Mysql{
-		Type: os.Getenv("DB_TYPE"),
-		Host: os.Getenv("DB_HOST"),
-		Port: os.Getenv("DB_PORT"),
-		Name: os.Getenv("DB_NAME"),
-		ModeInit: &MysqlModeSettings{
-			User:     os.Getenv("DB_INIT_USER"),
-			Password: os.Getenv("DB_INIT_PASSWORD"),
-			Params:   os.Getenv("DB_INIT_PARAMS"),
-			MaxOpen:  1,
-			MaxIdle:  1,
-			LifeTime: 30,
-			IdleTime: 30,
-		},
-		ModeDefault: &MysqlModeSettings{
-			User:     os.Getenv("DB_USER"),
-			Password: os.Getenv("DB_PASSWORD"),
-			Params:   os.Getenv("DB_PARAMS"),
-			MaxOpen:  maxOpen,
-			MaxIdle:  maxIdle,
-			LifeTime: lifeTime,
-			IdleTime: idleTime,
-		},
+	return &DB{
+		Type:     os.Getenv("DB_TYPE"),
+		Host:     os.Getenv("DB_HOST"),
+		Port:     os.Getenv("DB_PORT"),
+		Name:     os.Getenv("DB_NAME"),
+		User:     os.Getenv("DB_USER"),
+		Password: os.Getenv("DB_PASSWORD"),
+		Params:   os.Getenv("DB_PARAMS"),
+		MaxOpen:  maxOpen,
+		MaxIdle:  maxIdle,
+		LifeTime: lifeTime,
+		IdleTime: idleTime,
 	}, nil
 }
 
 // ================================================================
-func (e *Mysql) Open() error {
+func (r *DB) Open() error {
 	var err error
-	e.Close()
-	e.DB, err = e.ConnectWithMode("")
+	r.Close()
+	r.DB, err = r.Connect()
 	return err
 }
 
-func (e *Mysql) Close() {
-	if e.DB != nil {
-		e.DB.Close()
+func (r *DB) Close() {
+	if r.DB != nil {
+		r.DB.Close()
 	}
 }
 
 // ================================================================
 //
 // ================================================================
-func (e Mysql) ConnectWithMode(mode string) (*sqlx.DB, error) {
-	var (
-		ms               *MysqlModeSettings
-		connectionString string
-	)
+func (r DB) Connect() (*sqlx.DB, error) {
+	protocol := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?%s", r.User, r.Password, r.Host, r.Port, r.Name, r.Params)
 
-	switch mode {
-	case "init":
-		ms = e.ModeInit
-		connectionString = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?%s", ms.User, ms.Password, e.Host, e.Port, "", ms.Params)
-	default:
-		ms = e.ModeDefault
-		connectionString = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?%s", ms.User, ms.Password, e.Host, e.Port, e.Name, ms.Params)
-	}
-
-	db, err := sqlx.Open(e.Type, connectionString)
+	db, err := sqlx.Open(r.Type, protocol)
 	if err != nil {
 		return nil, err
 	}
 
-	db.SetMaxOpenConns(ms.MaxOpen)
-	db.SetMaxIdleConns(ms.MaxIdle)
-	db.SetConnMaxLifetime(time.Duration(ms.LifeTime) * time.Second)
-	db.SetConnMaxIdleTime(time.Duration(ms.IdleTime) * time.Second)
+	db.SetMaxOpenConns(r.MaxOpen)
+	db.SetMaxIdleConns(r.MaxIdle)
+	db.SetConnMaxLifetime(time.Duration(r.LifeTime) * time.Second)
+	db.SetConnMaxIdleTime(time.Duration(r.IdleTime) * time.Second)
 
 	err = db.Ping()
 	if err != nil {

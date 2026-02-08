@@ -1,8 +1,10 @@
-module github.com/hexcraft-biz/envmod-mysql
+module envdb
 
-go 1.21.5
+go 1.24.4
 
 require (
-	github.com/go-sql-driver/mysql v1.7.1
-	github.com/jmoiron/sqlx v1.3.5
+	github.com/go-sql-driver/mysql v1.9.3
+	github.com/jmoiron/sqlx v1.4.0
 )
+
+require filippo.io/edwards25519 v1.1.0 // indirect

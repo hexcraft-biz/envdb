@@ -1,4 +1,4 @@
-package mysql
+package envdb
 
 func PositionalPlaceholders(num int) []string {
 	phs := make([]string, num)
