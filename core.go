@@ -17,7 +17,7 @@ type DB struct {
 	Port     string `json:"port"`
 	Name     string `json:"name"`
 	User     string `json:"user"`
-	Password string `json:"passowrd"`
+	Password string `json:"password"`
 	Params   string `json:"params"`
 	MaxOpen  int    `json:"maxOpen"`
 	MaxIdle  int    `json:"maxIdle"`
