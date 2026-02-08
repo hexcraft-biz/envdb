@@ -1,4 +1,4 @@
-module envdb
+module github.com/hexcraft-biz/envdb
 
 go 1.24.4
 
